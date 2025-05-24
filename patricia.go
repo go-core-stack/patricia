@@ -1,3 +1,19 @@
+// Copyright © 2025 Prabhjot Singh Sethi, All Rights reserved
+// Author: Prabhjot Singh Sethi <prabhjot.sethi@gmail.com>
+//
+// Initial logic was contributed by Prabhjot Singh Sethi in
+// 2013 to Contail Systems (Juniper Networks) as part of the
+// Linux Foundation open source project Tungsten Fabric, while
+// originally it was developed for networks centric usecases
+// using C++ as the programming language
+//
+// This repo repurpose the core logic and is rewritten in golang
+// for different extensions and use cases.
+// Over the time it is expected to significantly diverge from the
+// original implementation, but the core logic remains the same.
+// Original source:
+// https://github.com/tungstenfabric/tf-common/blob/master/base/patricia.h
+
 package patricia
 
 import "reflect"
