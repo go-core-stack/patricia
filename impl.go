@@ -56,10 +56,10 @@ func (n *node[K, D]) ByteValue(pos int) byte {
 	return (*n.key_).ByteValue(pos)
 }
 
-// Tree represents a Patricia tree (Practical Algorithm to Retrieve Information Coded in Alphanumeric).
+// treeImpl represents a Patricia tree (Practical Algorithm to Retrieve Information Coded in Alphanumeric).
 // It is a space-optimized trie data structure where each node with only one child is merged with its child.
 // The Patricia tree supports efficient insert, remove, and search operations for variable-length keys.
-type Tree[K Key, D any] struct {
+type treeImpl[K Key, D any] struct {
 	nodes_    int         // Number of leaf nodes (actual data entries)
 	intNodes_ int         // Number of internal nodes (used for branching)
 	root_     *node[K, D] // Pointer to the root node of the tree
@@ -84,7 +84,7 @@ func createNew[K Key, D any]() *node[K, D] {
 
 // getBit returns the value of the bit at position pos in the given node's key.
 // Returns false if the node is nil or the position is out of bounds.
-func (t *Tree[K, D]) getBit(node *node[K, D], pos int) bool {
+func (t *treeImpl[K, D]) getBit(node *node[K, D], pos int) bool {
 	if node == nil {
 		return false
 	}
@@ -96,7 +96,7 @@ func (t *Tree[K, D]) getBit(node *node[K, D], pos int) bool {
 
 // compareNodes compares two nodes for key equality.
 // Returns true if the keys are equal in both length and content.
-func (t *Tree[K, D]) compareNodes(n_left, n_right *node[K, D]) bool {
+func (t *treeImpl[K, D]) compareNodes(n_left, n_right *node[K, D]) bool {
 	if n_left == nil || n_right == nil {
 		return false
 	}
@@ -124,7 +124,7 @@ func (t *Tree[K, D]) compareNodes(n_left, n_right *node[K, D]) bool {
 
 // compare compares two nodes' keys starting from a given bit position.
 // Returns the position of the first differing bit and whether the keys are equal up to the shortest length.
-func (t *Tree[K, D]) compare(node_left, node_right *node[K, D], start int) (pos int, isEqual bool) {
+func (t *treeImpl[K, D]) compare(node_left, node_right *node[K, D], start int) (pos int, isEqual bool) {
 	isEqual = false
 	if node_left == nil || node_right == nil {
 		return
@@ -163,7 +163,7 @@ func (t *Tree[K, D]) compare(node_left, node_right *node[K, D], start int) (pos 
 
 // rewireRightMost rewires the rightmost child of x to point to p.
 // Used during node removal and tree restructuring.
-func (t *Tree[K, D]) rewireRightMost(p *node[K, D], x *node[K, D]) *node[K, D] {
+func (t *treeImpl[K, D]) rewireRightMost(p *node[K, D], x *node[K, D]) *node[K, D] {
 	if x == nil {
 		return nil
 	}
@@ -178,7 +178,7 @@ func (t *Tree[K, D]) rewireRightMost(p *node[K, D], x *node[K, D]) *node[K, D] {
 
 // GetLastNode returns the last (rightmost) node in the tree.
 // Deprecated: will be removed in future versions. Kept for backward compatibility.
-func (t *Tree[K, D]) GetLastNode() *node[K, D] {
+func (t *treeImpl[K, D]) GetLastNode() *node[K, D] {
 	if t.root_ == nil {
 		return nil
 	}
@@ -207,7 +207,7 @@ func (t *Tree[K, D]) GetLastNode() *node[K, D] {
 
 // GetPrevNode returns the previous node in the tree before node n.
 // Deprecated: will be removed in future versions. Kept for backward compatibility.
-func (t *Tree[K, D]) GetPrevNode(n *node[K, D]) *node[K, D] {
+func (t *treeImpl[K, D]) GetPrevNode(n *node[K, D]) *node[K, D] {
 	if n == nil || t.root_ == nil {
 		return nil
 	}
@@ -273,7 +273,7 @@ func (t *Tree[K, D]) GetPrevNode(n *node[K, D]) *node[K, D] {
 
 // getNextNode returns the next node in the tree after node n.
 // If n is nil, it returns the leftmost node (the first node in order).
-func (t *Tree[K, D]) getNextNode(n *node[K, D]) *node[K, D] {
+func (t *treeImpl[K, D]) getNextNode(n *node[K, D]) *node[K, D] {
 	if t.root_ == nil {
 		return nil
 	}
@@ -308,7 +308,7 @@ func (t *Tree[K, D]) getNextNode(n *node[K, D]) *node[K, D] {
 // Returns the data pointer for the node with the longest matching prefix, or nil if no match is found.
 // Logic: Traverses the tree, comparing bits of the search key with each node.
 // If a node matches up to its bit position, it is a candidate for the longest prefix match.
-func (t *Tree[K, D]) LPMFind(key *K) *D {
+func (t *treeImpl[K, D]) LPMFind(key *K) *D {
 	if t.root_ == nil {
 		return nil
 	}
@@ -354,7 +354,7 @@ func (t *Tree[K, D]) LPMFind(key *K) *D {
 // FindNextNode is deprecated. Use getNextNode instead.
 // Returns the next node in the tree after node n, or nil if there is none.
 // Logic: Traverses the tree to find the next node in key order after n.
-func (t *Tree[K, D]) FindNextNode(n *node[K, D]) *node[K, D] {
+func (t *treeImpl[K, D]) FindNextNode(n *node[K, D]) *node[K, D] {
 	if n == nil || t.root_ == nil {
 		return nil
 	}
@@ -450,7 +450,7 @@ func (t *Tree[K, D]) FindNextNode(n *node[K, D]) *node[K, D] {
 // FindNode searches for a node with the exact key and returns its data pointer.
 // Returns nil if the key is not found.
 // Logic: Traverses the tree, following the bits of the search key, and compares the found node for exact match.
-func (t *Tree[K, D]) FindNode(key *K) *D {
+func (t *treeImpl[K, D]) FindNode(key *K) *D {
 	if t.root_ == nil {
 		return nil
 	}
@@ -488,7 +488,7 @@ func (t *Tree[K, D]) FindNode(key *K) *D {
 // Remove deletes the node with the given key from the tree.
 // Returns true if the node was found and removed, false otherwise.
 // Logic: Traverses the tree to find the node, then restructures the tree to maintain the Patricia property.
-func (t *Tree[K, D]) Remove(key *K) bool {
+func (t *treeImpl[K, D]) Remove(key *K) bool {
 	if t.root_ == nil {
 		return false
 	}
@@ -599,7 +599,7 @@ func (t *Tree[K, D]) Remove(key *K) bool {
 // Insert adds a new key/data pair to the tree.
 // Returns false if the key already exists, true if the insertion was successful.
 // Logic: Traverses the tree to find the correct insertion point, then inserts the new node and restructures as needed.
-func (t *Tree[K, D]) Insert(key *K, data *D) bool {
+func (t *treeImpl[K, D]) Insert(key *K, data *D) bool {
 	n := createNew[K, D]()
 	n.key_ = key
 	n.data_ = data
@@ -710,7 +710,7 @@ func (t *Tree[K, D]) Insert(key *K, data *D) bool {
 // All returns a function that iterates over all key/data pairs in the tree in order.
 // The provided yield function is called for each key/data pair. If yield returns false, iteration stops.
 // Logic: Uses getNextNode to traverse the tree in key order, yielding each leaf node's key and data.
-func (t *Tree[K, D]) All() func(func(K, D) bool) {
+func (t *treeImpl[K, D]) All() func(func(K, D) bool) {
 	return func(yield func(K, D) bool) {
 		if t.root_ == nil {
 			// If the tree is empty, nothing to yield.

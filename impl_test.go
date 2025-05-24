@@ -35,12 +35,12 @@ type data struct {
 }
 
 // tree is the global Patricia tree instance used in tests.
-var tree *Tree[key, data]
+var tree *treeImpl[key, data]
 
 // initializeTree resets the global tree before each test.
 func initializeTree() {
 	if tree == nil {
-		tree = &Tree[key, data]{}
+		tree = &treeImpl[key, data]{}
 	}
 }
 
