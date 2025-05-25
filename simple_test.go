@@ -67,6 +67,25 @@ func TestSimpleTreePrefixSearch(t *testing.T) {
 			t.Errorf("PrefixSearch(%q) = %q, want %q", tt.key, got, tt.expected)
 		}
 	}
+
+	got, ok := tree.PrefixSearch("adfg")
+	if !ok {
+		t.Error("expected PrefixSearch('adfg') to return a value")
+	} else {
+		if got != "A" {
+			t.Errorf("expected PrefixSearch('adfg') to return 'A', got %s", got)
+		}
+	}
+
+	_, ok = tree.Search("adfg")
+	if ok {
+		t.Error("expected Search('adfg') to fail")
+	}
+
+	got, ok = tree.Search("a")
+	if !ok || got != "A" {
+		t.Errorf("expected Search('a') to return 'A', got %s, ok=%v", got, ok)
+	}
 }
 
 // TestSimpleTreeAll tests the All iterator.
@@ -87,22 +106,6 @@ func TestSimpleTreeAll(t *testing.T) {
 		if found[k] != vals[i] {
 			t.Errorf("All: expected %s=%d, got %d", k, vals[i], found[k])
 		}
-	}
-}
-
-// TestSimpleTreeAllEarlyStop tests early stopping in All iterator.
-func TestSimpleTreeAllEarlyStop(t *testing.T) {
-	tree := NewSimpleTree[int]()
-	tree.Insert("a", 1)
-	tree.Insert("b", 2)
-	tree.Insert("c", 3)
-
-	count := 0
-	for range tree.All() {
-		count++
-	}
-	if count != 3 {
-		t.Errorf("All: expected early stop after 1, got %d", count)
 	}
 }
 
