@@ -55,6 +55,10 @@ type SimpleTree[D any] interface {
 	// Returns the value for the best matching prefix. returns found as false if no match is found.
 	PrefixSearch(key string) (D, bool)
 
+	// Search finds the value associated with the exact key in the Patricia tree.
+	// Returns the value if found, and a boolean indicating whether the key was present.
+	Search(key string) (D, bool)
+
 	// All returns a function that iterates over all key-value pairs in the tree in order.
 	// The provided yield function is called for each key-value pair.
 	// If yield returns false, iteration stops early.
@@ -90,6 +94,17 @@ func (t *simpleTree[D]) Remove(key string) bool {
 func (t *simpleTree[D]) PrefixSearch(key string) (D, bool) {
 	var zero D
 	val := t.tree.LPMFind(&stringKey{val: key})
+	if val != nil {
+		return *val, true
+	}
+	return zero, false
+}
+
+// Search finds the value associated with the exact key in the Patricia tree.
+// Returns the value if found, and a boolean indicating whether the key was present.
+func (t *simpleTree[D]) Search(key string) (D, bool) {
+	var zero D
+	val := t.tree.FindNode(&stringKey{val: key})
 	if val != nil {
 		return *val, true
 	}
