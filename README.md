@@ -86,7 +86,3 @@ func main() {
 - `Remove(key string) bool`: Deletes a key. Returns true if removed, false if not found.
 - `PrefixSearch(key string) (D, bool)`: Finds the value for the longest prefix match. Returns value and whether found.
 - `All() func(func(string, D) bool)`: Iterates over all key-value pairs in order. Stops early if the callback returns false.
-
-## License
-
-MIT License. See [LICENSE](./LICENSE) for details.
