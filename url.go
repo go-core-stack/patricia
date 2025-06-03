@@ -152,9 +152,11 @@ func (n *urlNode[D]) findNode(key *urlKey, values_in []string) (keys, values []s
 	if n.nextWildcard != nil {
 		// If there is a wildcard node, check it first
 		node = n.nextWildcard
-	} else {
+	} else if n.subTree != nil {
 		// Otherwise, look for a literal match in the subtree
 		node = n.subTree.FindNode(&stringKey{val: key.parts[pos]})
+	} else {
+		return
 	}
 
 	if node == nil {
