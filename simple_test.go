@@ -109,6 +109,31 @@ func TestSimpleTreeAll(t *testing.T) {
 	}
 }
 
+// TestSimpleTreeAll tests the All iterator.
+func TestSimpleTreeAll_2(t *testing.T) {
+	tree := NewSimpleTree[[]string]()
+	//keys := []string{"foo", "bar", "baz"}
+	keys := []string{"user"}
+	vals := []string{"foo", "bar", "baz"}
+	for _, k := range keys {
+		tree.Insert(k, vals)
+	}
+
+	found := make(map[string][]string)
+	for k, v := range tree.All() {
+		found[k] = v
+	}
+
+	for _, k := range keys {
+		newVals := found[k]
+		for i, v := range vals {
+			if newVals[i] != v {
+				t.Errorf("All: expected %s=%v, got %v", k, v, newVals[i])
+			}
+		}
+	}
+}
+
 // TestSimpleTreeEmpty tests operations on an empty tree.
 func TestSimpleTreeEmpty(t *testing.T) {
 	tree := NewSimpleTree[int]()

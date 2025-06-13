@@ -279,25 +279,28 @@ func (t *treeImpl[K, D]) getNextNode(n *node[K, D]) *node[K, D] {
 	}
 
 	x := t.root_
-	if n != nil {
-		x = n
-	}
-	l := x
-
-	for x != nil {
-		if x.bitpos_ < l.bitpos_ {
-			l = x
-			x = l.right_
-		} else {
-			l = x
-			if l.left_ != nil {
-				x = l.left_
-			} else {
-				x = l.right_
-			}
+	if n != nil || x.intnode_ {
+		if n != nil {
+			x = n
 		}
-		if x != nil && x.bitpos_ > l.bitpos_ && !x.intnode_ {
-			break
+
+		l := x
+
+		for x != nil {
+			if x.bitpos_ < l.bitpos_ {
+				l = x
+				x = l.right_
+			} else {
+				l = x
+				if l.left_ != nil {
+					x = l.left_
+				} else {
+					x = l.right_
+				}
+			}
+			if x != nil && x.bitpos_ > l.bitpos_ && !x.intnode_ {
+				break
+			}
 		}
 	}
 
