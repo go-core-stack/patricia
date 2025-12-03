@@ -16,8 +16,6 @@
 
 package patricia
 
-import "reflect"
-
 // Key is an interface that must be implemented by any key type used in the Patricia tree.
 // It provides methods to get the bit length of the key and to retrieve a byte at a given position.
 type Key interface {
@@ -65,21 +63,10 @@ type treeImpl[K Key, D any] struct {
 	root_     *node[K, D] // Pointer to the root node of the tree
 }
 
-// createNew creates a new node of type node[K, D] using reflection.
-// This is used to generically allocate nodes for any key/data type.
+// createNew creates a new node of type node[K, D].
+// This is a simple allocation function that returns a zero-initialized node.
 func createNew[K Key, D any]() *node[K, D] {
-	var t node[K, D]
-	typeOfT := reflect.TypeOf(t)
-
-	// If the type is not a pointer, create a pointer to it.
-	if typeOfT.Kind() != reflect.Ptr {
-		ptrToT := reflect.New(typeOfT)
-		val := ptrToT.Elem().Interface().(node[K, D])
-		return &val
-	}
-
-	val := reflect.New(typeOfT.Elem()).Interface().(node[K, D])
-	return &val
+	return &node[K, D]{}
 }
 
 // getBit returns the value of the bit at position pos in the given node's key.
