@@ -221,3 +221,113 @@ func Test_AllAfterRemovals(t *testing.T) {
 		t.Errorf("Internal node count Expected 0, got %d", tree.intNodes_)
 	}
 }
+
+// testKey is a special key type for testing non-byte-aligned bit lengths
+type testKey struct {
+	bytes     []byte
+	bitLength int
+}
+
+func (k testKey) BitLength() int {
+	return k.bitLength
+}
+
+func (k testKey) ByteValue(pos int) byte {
+	if pos < 0 || pos >= len(k.bytes) {
+		return 0
+	}
+	return k.bytes[pos]
+}
+
+func Test_InsertFindWithNonByteAligned(t *testing.T) {
+	tree := &treeImpl[testKey, data]{}
+
+	// Both keys have 13 bits (1 full byte + 5 remaining bits)
+	// Same first byte (0xFF) but differ in remaining 5 bits
+	// k1: 0xFF (11111111) + first 5 bits of 0xF8 (11111000) = 11111111 11111
+	// k2: 0xFF (11111111) + first 5 bits of 0x00 (00000000) = 11111111 00000
+	k1 := testKey{bytes: []byte{0xFF, 0xF8}, bitLength: 13}
+	k2 := testKey{bytes: []byte{0xFF, 0x00}, bitLength: 13}
+
+	d1 := &data{val: "data1"}
+
+	// Insert k1 first
+	if !tree.Insert(&k1, d1) {
+		t.Error("Failed to insert k1")
+	}
+
+	// FindNode should find k1 and return data1
+	result := tree.FindNode(&k1)
+	if result == nil || result.val != "data1" {
+		t.Error("Failed to find k1")
+	}
+
+	// FindNode with k2 should return nil (not inserted yet)
+	// But with the bug in compareNodes, it might incorrectly return data1
+	result = tree.FindNode(&k2)
+	if result != nil {
+		t.Errorf("BUG: FindNode(&k2) returned %v, expected nil (compareNodes bug: remaining bits not compared)", result.val)
+	}
+
+	if !tree.Remove(&k1) {
+		t.Errorf("Failed to remove key k1")
+	}
+}
+
+// Test_CompareNodesWithNonByteAligned tests compareNodes with non-byte-aligned keys.
+// This test ensures the bug fix for comparing remaining bits works correctly.
+// The bug was: the loop compared pos (in bits) against byteLen (in bytes),
+// so remaining bits after full bytes were never compared.
+func Test_CompareNodesWithNonByteAligned(t *testing.T) {
+	tree := &treeImpl[testKey, data]{}
+
+	// Test Case 1: Keys with 13 bits (1 full byte + 5 remaining bits)
+	// Both keys have same first byte (0xFF) but differ in the remaining 5 bits
+	// Key 1: 0xFF (11111111) + first 5 bits of 0xF8 (11111000) = 11111111 11111
+	// Key 2: 0xFF (11111111) + first 5 bits of 0x00 (00000000) = 11111111 00000
+	k1 := testKey{bytes: []byte{0xFF, 0xF8}, bitLength: 13}
+	k2 := testKey{bytes: []byte{0xFF, 0x00}, bitLength: 13}
+
+	n1 := &node[testKey, data]{key_: &k1}
+	n2 := &node[testKey, data]{key_: &k2}
+
+	// These keys differ only in the remaining 5 bits (bits 8-12)
+	// Without the fix, compareNodes would return true (bug!)
+	// With the fix, it should return false
+	if tree.compareNodes(n1, n2) {
+		t.Error("Expected nodes with different remaining bits to not be equal (BUG: remaining bits not compared)")
+	}
+
+	// Test Case 2: Keys with 13 bits that are identical
+	k3 := testKey{bytes: []byte{0xFF, 0xF8}, bitLength: 13}
+	k4 := testKey{bytes: []byte{0xFF, 0xF8}, bitLength: 13}
+
+	n3 := &node[testKey, data]{key_: &k3}
+	n4 := &node[testKey, data]{key_: &k4}
+
+	if !tree.compareNodes(n3, n4) {
+		t.Error("Expected nodes with same keys to be equal")
+	}
+
+	// Test Case 3: Keys with 10 bits (1 full byte + 2 remaining bits)
+	// Key 5: 0xAA (10101010) + first 2 bits of 0xC0 (11000000) = 10101010 11
+	// Key 6: 0xAA (10101010) + first 2 bits of 0x00 (00000000) = 10101010 00
+	k5 := testKey{bytes: []byte{0xAA, 0xC0}, bitLength: 10}
+	k6 := testKey{bytes: []byte{0xAA, 0x00}, bitLength: 10}
+
+	n5 := &node[testKey, data]{key_: &k5}
+	n6 := &node[testKey, data]{key_: &k6}
+
+	// Differ in bits 8-9
+	if tree.compareNodes(n5, n6) {
+		t.Error("Expected nodes with different remaining bits to not be equal (BUG: remaining bits not compared)")
+	}
+
+	// Test nil cases
+	if tree.compareNodes(nil, n1) {
+		t.Error("Expected compareNodes with nil to return false")
+	}
+	if tree.compareNodes(n1, nil) {
+		t.Error("Expected compareNodes with nil to return false")
+	}
+}

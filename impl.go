@@ -104,8 +104,9 @@ func (t *treeImpl[K, D]) compareNodes(n_left, n_right *node[K, D]) bool {
 		return false
 	}
 
+	bitLength := n_left.BitLength()
 	// Compare byte by byte for the full bytes.
-	byteLen := n_left.BitLength() >> 3
+	byteLen := bitLength >> 3
 	pos := 0
 	for ; pos < byteLen; pos++ {
 		if n_left.ByteValue(pos) != n_right.ByteValue(pos) {
@@ -114,7 +115,7 @@ func (t *treeImpl[K, D]) compareNodes(n_left, n_right *node[K, D]) bool {
 	}
 
 	// Compare remaining bits if any.
-	for pos <<= 3; pos < byteLen; pos++ {
+	for pos <<= 3; pos < bitLength; pos++ {
 		if t.getBit(n_left, pos) != t.getBit(n_right, pos) {
 			return false
 		}
