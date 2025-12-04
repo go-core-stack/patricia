@@ -122,7 +122,7 @@ func (t *simpleTree[D]) Search(key string) (D, bool) {
 //	}
 func (t *simpleTree[D]) All() func(func(string, D) bool) {
 	return func(yield func(string, D) bool) {
-		if t.tree.root_ == nil {
+		if t.tree.root == nil {
 			// If the tree is empty, nothing to yield.
 			return
 		}
@@ -130,8 +130,8 @@ func (t *simpleTree[D]) All() func(func(string, D) bool) {
 		n := t.tree.getNextNode(nil)
 		for n != nil {
 			// Only yield nodes that have both key and data set (i.e., leaf nodes).
-			if n.data_ != nil && n.key_ != nil {
-				if !yield(n.key_.val, *n.data_) {
+			if n.data != nil && n.key != nil {
+				if !yield(n.key.val, *n.data) {
 					// If yield returns false, stop iteration early.
 					return
 				}

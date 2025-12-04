@@ -28,39 +28,39 @@ type Key interface {
 // node represents a node in the Patricia tree.
 // Each node may be an internal node (used for branching) or a leaf node (storing actual data).
 type node[K Key, D any] struct {
-	left_    *node[K, D] // Left child node
-	right_   *node[K, D] // Right child node
-	intnode_ bool        // True if this is an internal node, false if it is a leaf
-	bitpos_  int         // Bit position used for branching at this node
-	key_     *K          // Pointer to the key (only set for leaf nodes)
-	data_    *D          // Pointer to the data (only set for leaf nodes)
+	left    *node[K, D] // Left child node
+	right   *node[K, D] // Right child node
+	intnode bool        // True if this is an internal node, false if it is a leaf
+	bitpos  int         // Bit position used for branching at this node
+	key     *K          // Pointer to the key (only set for leaf nodes)
+	data    *D          // Pointer to the data (only set for leaf nodes)
 }
 
 // BitLength returns the bit length of the key stored in this node.
 // If the key is nil, it returns 0.
 func (n *node[K, D]) BitLength() int {
-	if n.key_ == nil {
+	if n.key == nil {
 		return 0
 	}
-	return (*n.key_).BitLength()
+	return (*n.key).BitLength()
 }
 
 // ByteValue returns the byte at the given position in the key stored in this node.
 // If the key is nil, it returns 0.
 func (n *node[K, D]) ByteValue(pos int) byte {
-	if n.key_ == nil {
+	if n.key == nil {
 		return 0
 	}
-	return (*n.key_).ByteValue(pos)
+	return (*n.key).ByteValue(pos)
 }
 
 // treeImpl represents a Patricia tree (Practical Algorithm to Retrieve Information Coded in Alphanumeric).
 // It is a space-optimized trie data structure where each node with only one child is merged with its child.
 // The Patricia tree supports efficient insert, remove, and search operations for variable-length keys.
 type treeImpl[K Key, D any] struct {
-	nodes_    int         // Number of leaf nodes (actual data entries)
-	intNodes_ int         // Number of internal nodes (used for branching)
-	root_     *node[K, D] // Pointer to the root node of the tree
+	nodes    int         // Number of leaf nodes (actual data entries)
+	intNodes int         // Number of internal nodes (used for branching)
+	root     *node[K, D] // Pointer to the root node of the tree
 }
 
 // createNew creates a new node of type node[K, D].
@@ -156,37 +156,37 @@ func (t *treeImpl[K, D]) rewireRightMost(p *node[K, D], x *node[K, D]) *node[K, 
 		return nil
 	}
 
-	for x.right_ != nil && x.right_.bitpos_ > x.bitpos_ {
-		x = x.right_
+	for x.right != nil && x.right.bitpos > x.bitpos {
+		x = x.right
 	}
-	pRight := x.right_
-	x.right_ = p
+	pRight := x.right
+	x.right = p
 	return pRight
 }
 
 // GetLastNode returns the last (rightmost) node in the tree.
 // Deprecated: will be removed in future versions. Kept for backward compatibility.
 func (t *treeImpl[K, D]) GetLastNode() *node[K, D] {
-	if t.root_ == nil {
+	if t.root == nil {
 		return nil
 	}
 
-	x := t.root_
+	x := t.root
 	for x != nil {
-		if x.right_ != nil {
-			if x.right_.bitpos_ < x.bitpos_ {
-				if x.left_ == nil {
+		if x.right != nil {
+			if x.right.bitpos < x.bitpos {
+				if x.left == nil {
 					return x
 				}
-				x = x.left_
+				x = x.left
 			} else {
-				x = x.right_
+				x = x.right
 			}
 		} else {
-			if x.left_ == nil {
+			if x.left == nil {
 				return x
 			}
-			x = x.left_
+			x = x.left
 		}
 	}
 
@@ -196,34 +196,34 @@ func (t *treeImpl[K, D]) GetLastNode() *node[K, D] {
 // GetPrevNode returns the previous node in the tree before node n.
 // Deprecated: will be removed in future versions. Kept for backward compatibility.
 func (t *treeImpl[K, D]) GetPrevNode(n *node[K, D]) *node[K, D] {
-	if n == nil || t.root_ == nil {
+	if n == nil || t.root == nil {
 		return nil
 	}
 
 	var l *node[K, D]
-	p := t.root_
+	p := t.root
 	x := p
 	rightTurn := x
 	greatestPartial := x
 
 	for x != nil {
-		if x.bitpos_ > n.BitLength() {
+		if x.bitpos > n.BitLength() {
 			x = nil
 			break
-		} else if x.bitpos_ == n.BitLength() && !x.intnode_ {
+		} else if x.bitpos == n.BitLength() && !x.intnode {
 			break
 		}
 		p = x
-		if t.getBit(n, x.bitpos_) {
+		if t.getBit(n, x.bitpos) {
 			rightTurn = x
-			x = x.right_
+			x = x.right
 		} else {
-			if !x.intnode_ {
+			if !x.intnode {
 				greatestPartial = x
 			}
-			x = x.left_
+			x = x.left
 		}
-		if x != nil && p.bitpos_ >= x.bitpos_ {
+		if x != nil && p.bitpos >= x.bitpos {
 			x = nil
 			break
 		}
@@ -234,7 +234,7 @@ func (t *treeImpl[K, D]) GetPrevNode(n *node[K, D]) *node[K, D] {
 	}
 
 	if rightTurn != nil && greatestPartial != nil {
-		if greatestPartial.bitpos_ > rightTurn.bitpos_ {
+		if greatestPartial.bitpos > rightTurn.bitpos {
 			return greatestPartial
 		}
 	}
@@ -243,11 +243,11 @@ func (t *treeImpl[K, D]) GetPrevNode(n *node[K, D]) *node[K, D] {
 		return greatestPartial
 	}
 
-	x = rightTurn.left_
+	x = rightTurn.left
 	for x != nil {
-		l = x.left_
-		r := x.right_
-		if r != nil && r.bitpos_ > x.bitpos_ {
+		l = x.left
+		r := x.right
+		if r != nil && r.bitpos > x.bitpos {
 			x = r
 		} else if l != nil {
 			x = l
@@ -262,12 +262,12 @@ func (t *treeImpl[K, D]) GetPrevNode(n *node[K, D]) *node[K, D] {
 // getNextNode returns the next node in the tree after node n.
 // If n is nil, it returns the leftmost node (the first node in order).
 func (t *treeImpl[K, D]) getNextNode(n *node[K, D]) *node[K, D] {
-	if t.root_ == nil {
+	if t.root == nil {
 		return nil
 	}
 
-	x := t.root_
-	if n != nil || x.intnode_ {
+	x := t.root
+	if n != nil || x.intnode {
 		if n != nil {
 			x = n
 		}
@@ -275,18 +275,18 @@ func (t *treeImpl[K, D]) getNextNode(n *node[K, D]) *node[K, D] {
 		l := x
 
 		for x != nil {
-			if x.bitpos_ < l.bitpos_ {
+			if x.bitpos < l.bitpos {
 				l = x
-				x = l.right_
+				x = l.right
 			} else {
 				l = x
-				if l.left_ != nil {
-					x = l.left_
+				if l.left != nil {
+					x = l.left
 				} else {
-					x = l.right_
+					x = l.right
 				}
 			}
-			if x != nil && x.bitpos_ > l.bitpos_ && !x.intnode_ {
+			if x != nil && x.bitpos > l.bitpos && !x.intnode {
 				break
 			}
 		}
@@ -300,43 +300,43 @@ func (t *treeImpl[K, D]) getNextNode(n *node[K, D]) *node[K, D] {
 // Logic: Traverses the tree, comparing bits of the search key with each node.
 // If a node matches up to its bit position, it is a candidate for the longest prefix match.
 func (t *treeImpl[K, D]) LPMFind(key *K) *D {
-	if t.root_ == nil {
+	if t.root == nil {
 		return nil
 	}
 
 	n := createNew[K, D]()
-	n.key_ = key
+	n.key = key
 
 	var p, x, l *node[K, D]
-	x = t.root_
+	x = t.root
 	i := 0
 
 	for x != nil {
-		if !x.intnode_ {
+		if !x.intnode {
 			var ok bool
 			if i, ok = t.compare(n, x, i); ok {
-				return x.data_
+				return x.data
 			}
-			if i == x.bitpos_ {
+			if i == x.bitpos {
 				l = x
 			}
 		}
-		if x.bitpos_ > n.BitLength() {
+		if x.bitpos > n.BitLength() {
 			break
 		}
 		p = x
-		if t.getBit(n, x.bitpos_) {
-			x = x.right_
+		if t.getBit(n, x.bitpos) {
+			x = x.right
 		} else {
-			x = x.left_
+			x = x.left
 		}
-		if x != nil && p.bitpos_ >= x.bitpos_ {
+		if x != nil && p.bitpos >= x.bitpos {
 			break
 		}
 	}
 
 	if l != nil {
-		return l.data_
+		return l.data
 	}
 
 	return nil
@@ -346,67 +346,67 @@ func (t *treeImpl[K, D]) LPMFind(key *K) *D {
 // Returns the next node in the tree after node n, or nil if there is none.
 // Logic: Traverses the tree to find the next node in key order after n.
 func (t *treeImpl[K, D]) FindNextNode(n *node[K, D]) *node[K, D] {
-	if n == nil || t.root_ == nil {
+	if n == nil || t.root == nil {
 		return nil
 	}
-	p := t.root_
+	p := t.root
 	l := p
 	x := p
 	i := 0
 	for x != nil {
-		if !x.intnode_ {
+		if !x.intnode {
 			var ok bool
 			if i, ok = t.compare(n, x, i); ok {
 				return t.getNextNode(x)
 			}
-			if x.bitpos_ > n.BitLength() || i != x.bitpos_ {
+			if x.bitpos > n.BitLength() || i != x.bitpos {
 				break
 			}
 			l = x
 		}
 		p = x
-		if t.getBit(n, x.bitpos_) {
-			x = x.right_
+		if t.getBit(n, x.bitpos) {
+			x = x.right
 		} else {
-			x = x.left_
+			x = x.left
 		}
-		if x != nil && p.bitpos_ >= x.bitpos_ {
+		if x != nil && p.bitpos >= x.bitpos {
 			break
 		}
 	}
 	if l != nil {
 		x = l
-		for x != nil && x.bitpos_ <= i {
+		for x != nil && x.bitpos <= i {
 			l = x
-			if t.getBit(n, x.bitpos_) {
-				x = x.right_
+			if t.getBit(n, x.bitpos) {
+				x = x.right
 			} else {
-				x = x.left_
+				x = x.left
 			}
-			if x != nil && l.bitpos_ >= x.bitpos_ {
+			if x != nil && l.bitpos >= x.bitpos {
 				break
 			}
 		}
-		if n.BitLength() != l.bitpos_ {
-			if t.getBit(n, l.bitpos_) {
+		if n.BitLength() != l.bitpos {
+			if t.getBit(n, l.bitpos) {
 				if x == nil {
 					return nil
 				}
-				if l.bitpos_ > x.bitpos_ {
-					for x != nil && l.bitpos_ > x.bitpos_ {
+				if l.bitpos > x.bitpos {
+					for x != nil && l.bitpos > x.bitpos {
 						l = x
-						x = x.right_
+						x = x.right
 					}
 					l = x
 				} else if t.getBit(n, i) {
-					for x.right_ != nil && x.bitpos_ < x.right_.bitpos_ {
-						x = x.right_
+					for x.right != nil && x.bitpos < x.right.bitpos {
+						x = x.right
 					}
 					l = x
-					x = x.right_
-					for x != nil && l.bitpos_ > x.bitpos_ {
+					x = x.right
+					for x != nil && l.bitpos > x.bitpos {
 						l = x
-						x = x.right_
+						x = x.right
 					}
 					l = x
 				} else {
@@ -414,17 +414,17 @@ func (t *treeImpl[K, D]) FindNextNode(n *node[K, D]) *node[K, D] {
 				}
 			} else {
 				if x == nil || t.getBit(n, i) {
-					x = l.right_
-					for x != nil && l.bitpos_ > x.bitpos_ {
+					x = l.right
+					for x != nil && l.bitpos > x.bitpos {
 						l = x
-						x = x.right_
+						x = x.right
 					}
 					l = x
 				} else {
 					l = x
 				}
 			}
-			if x != nil && !x.intnode_ {
+			if x != nil && !x.intnode {
 				return x
 			}
 		}
@@ -442,29 +442,29 @@ func (t *treeImpl[K, D]) FindNextNode(n *node[K, D]) *node[K, D] {
 // Returns nil if the key is not found.
 // Logic: Traverses the tree, following the bits of the search key, and compares the found node for exact match.
 func (t *treeImpl[K, D]) FindNode(key *K) *D {
-	if t.root_ == nil {
+	if t.root == nil {
 		return nil
 	}
 
 	n := createNew[K, D]()
-	n.key_ = key
+	n.key = key
 
-	p := t.root_
+	p := t.root
 	x := p
 	for x != nil {
-		if x.bitpos_ > n.BitLength() {
+		if x.bitpos > n.BitLength() {
 			x = nil
 			break
-		} else if x.bitpos_ == n.BitLength() && !x.intnode_ {
+		} else if x.bitpos == n.BitLength() && !x.intnode {
 			break
 		}
 		p = x
-		if t.getBit(n, x.bitpos_) {
-			x = x.right_
+		if t.getBit(n, x.bitpos) {
+			x = x.right
 		} else {
-			x = x.left_
+			x = x.left
 		}
-		if x != nil && p.bitpos_ >= x.bitpos_ {
+		if x != nil && p.bitpos >= x.bitpos {
 			break
 		}
 	}
@@ -473,39 +473,39 @@ func (t *treeImpl[K, D]) FindNode(key *K) *D {
 		return nil
 	}
 
-	return x.data_
+	return x.data
 }
 
 // Remove deletes the node with the given key from the tree.
 // Returns true if the node was found and removed, false otherwise.
 // Logic: Traverses the tree to find the node, then restructures the tree to maintain the Patricia property.
 func (t *treeImpl[K, D]) Remove(key *K) bool {
-	if t.root_ == nil {
+	if t.root == nil {
 		return false
 	}
 
 	n := createNew[K, D]()
-	n.key_ = key
+	n.key = key
 
 	var pPrev, p *node[K, D]
-	x := t.root_
+	x := t.root
 
 	// Traverse the tree to find the node to remove.
 	for x != nil {
-		if x.bitpos_ > n.BitLength() {
+		if x.bitpos > n.BitLength() {
 			x = nil
 			break
-		} else if x.bitpos_ == n.BitLength() && !x.intnode_ {
+		} else if x.bitpos == n.BitLength() && !x.intnode {
 			break
 		}
 		pPrev = p
 		p = x
-		if t.getBit(n, x.bitpos_) {
-			x = x.right_
+		if t.getBit(n, x.bitpos) {
+			x = x.right
 		} else {
-			x = x.left_
+			x = x.left
 		}
-		if x != nil && p.bitpos_ >= x.bitpos_ {
+		if x != nil && p.bitpos >= x.bitpos {
 			/* no x to deal with */
 			x = nil
 			break
@@ -519,71 +519,71 @@ func (t *treeImpl[K, D]) Remove(key *K) bool {
 
 	var a *node[K, D]
 	// Case 1: Node has both left and right children, and right child is a descendant.
-	if x.left_ != nil && x.right_ != nil && x.bitpos_ < x.right_.bitpos_ {
+	if x.left != nil && x.right != nil && x.bitpos < x.right.bitpos {
 		// Replace the node with a new internal node.
 		a = createNew[K, D]()
-		a.bitpos_ = x.bitpos_
-		a.intnode_ = true
-		t.intNodes_++
-		a.left_ = x.left_
-		a.right_ = x.right_
-		t.rewireRightMost(a, x.left_)
+		a.bitpos = x.bitpos
+		a.intnode = true
+		t.intNodes++
+		a.left = x.left
+		a.right = x.right
+		t.rewireRightMost(a, x.left)
 		if p == nil {
-			t.root_ = a
-		} else if t.getBit(x, p.bitpos_) {
-			p.right_ = a
+			t.root = a
+		} else if t.getBit(x, p.bitpos) {
+			p.right = a
 		} else {
-			p.left_ = a
+			p.left = a
 		}
 		// Case 2: Node has only a left child.
-	} else if x.left_ != nil {
+	} else if x.left != nil {
 		if p == nil {
-			t.root_ = x.left_
-		} else if t.getBit(x, p.bitpos_) {
-			p.right_ = x.left_
+			t.root = x.left
+		} else if t.getBit(x, p.bitpos) {
+			p.right = x.left
 		} else {
-			p.left_ = x.left_
+			p.left = x.left
 		}
-		t.rewireRightMost(x.right_, x.left_)
+		t.rewireRightMost(x.right, x.left)
 		// Case 3: Node has only a right child, and right child is a descendant.
-	} else if x.right_ != nil && x.bitpos_ < x.right_.bitpos_ {
+	} else if x.right != nil && x.bitpos < x.right.bitpos {
 		if p == nil {
-			t.root_ = x.right_
-		} else if t.getBit(x, p.bitpos_) {
-			p.right_ = x.right_
+			t.root = x.right
+		} else if t.getBit(x, p.bitpos) {
+			p.right = x.right
 		} else {
-			p.left_ = x.right_
+			p.left = x.right
 		}
 		// Case 4: Node is a leaf or has no children.
 	} else {
 		if p == nil {
-			t.root_ = nil
-		} else if p.intnode_ {
-			if t.getBit(x, p.bitpos_) {
-				a = p.left_
-				// RewireRightMost((pPrev.left_ == p) ? pPrev : nil, a)
-				t.rewireRightMost(x.right_, a)
+			t.root = nil
+		} else if p.intnode {
+			if t.getBit(x, p.bitpos) {
+				a = p.left
+				// RewireRightMost((pPrev.left == p) ? pPrev : nil, a)
+				t.rewireRightMost(x.right, a)
 			} else {
-				a = p.right_
+				a = p.right
 			}
 			if pPrev == nil {
-				t.root_ = a
-			} else if t.getBit(x, pPrev.bitpos_) {
-				pPrev.right_ = a
+				t.root = a
+			} else if t.getBit(x, pPrev.bitpos) {
+				pPrev.right = a
 			} else {
-				pPrev.left_ = a
+				pPrev.left = a
 			}
-			t.intNodes_--
+			t.intNodes--
 		} else {
-			if t.getBit(x, p.bitpos_) {
-				p.right_ = x.right_
+			if t.getBit(x, p.bitpos) {
+				p.right = x.right
 			} else {
-				p.left_ = nil
+				p.left = nil
 			}
 		}
 	}
 
-	t.nodes_--
+	t.nodes--
 	return true
 }
 
@@ -592,22 +592,22 @@ func (t *treeImpl[K, D]) Remove(key *K) bool {
 // Logic: Traverses the tree to find the correct insertion point, then inserts the new node and restructures as needed.
 func (t *treeImpl[K, D]) Insert(key *K, data *D) bool {
 	n := createNew[K, D]()
-	n.key_ = key
-	n.data_ = data
-	x := t.root_
+	n.key = key
+	n.data = data
+	x := t.root
 	var p *node[K, D]
 	// Traverse the tree to find the correct insertion point.
 	for x != nil {
-		if x.bitpos_ >= n.BitLength() && !x.intnode_ {
+		if x.bitpos >= n.BitLength() && !x.intnode {
 			break
 		}
 		p = x
-		if t.getBit(n, x.bitpos_) {
-			x = x.right_
+		if t.getBit(n, x.bitpos) {
+			x = x.right
 		} else {
-			x = x.left_
+			x = x.left
 		}
-		if x != nil && p.bitpos_ >= x.bitpos_ {
+		if x != nil && p.bitpos >= x.bitpos {
 			x = nil
 			break
 		}
@@ -623,77 +623,77 @@ func (t *treeImpl[K, D]) Insert(key *K, data *D) bool {
 			// Key already exists.
 			return false
 		}
-		if i != n.BitLength() || i != l.bitpos_ {
+		if i != n.BitLength() || i != l.bitpos {
 			p = nil
-			x = t.root_
-			for x != nil && x.bitpos_ <= i && x.bitpos_ < n.BitLength() {
+			x = t.root
+			for x != nil && x.bitpos <= i && x.bitpos < n.BitLength() {
 				p = x
-				if t.getBit(n, x.bitpos_) {
-					x = x.right_
+				if t.getBit(n, x.bitpos) {
+					x = x.right
 				} else {
-					x = x.left_
+					x = x.left
 				}
-				if x != nil && p.bitpos_ >= x.bitpos_ {
+				if x != nil && p.bitpos >= x.bitpos {
 					x = nil
 					break
 				}
 			}
 		}
 	}
-	t.nodes_++
-	n.left_ = nil
-	n.right_ = nil
-	n.bitpos_ = n.BitLength()
+	t.nodes++
+	n.left = nil
+	n.right = nil
+	n.bitpos = n.BitLength()
 	if x != nil {
-		if x.bitpos_ == i {
-			n.right_ = x.right_
-			n.left_ = x.left_
-			t.rewireRightMost(n, x.left_)
-			t.intNodes_--
+		if x.bitpos == i {
+			n.right = x.right
+			n.left = x.left
+			t.rewireRightMost(n, x.left)
+			t.intNodes--
 			l = n
 		} else {
 			if i == n.BitLength() {
 				if t.getBit(l, i) {
-					n.right_ = x
+					n.right = x
 				} else {
-					n.left_ = x
-					n.right_ = t.rewireRightMost(n, x)
+					n.left = x
+					n.right = t.rewireRightMost(n, x)
 				}
 				l = n
 			} else {
 				l = createNew[K, D]()
-				t.intNodes_++
-				l.bitpos_ = i
-				l.intnode_ = true
+				t.intNodes++
+				l.bitpos = i
+				l.intnode = true
 				if t.getBit(n, i) {
-					l.left_ = x
-					l.right_ = n
-					n.right_ = t.rewireRightMost(l, x)
+					l.left = x
+					l.right = n
+					n.right = t.rewireRightMost(l, x)
 				} else {
-					l.left_ = n
-					l.right_ = x
-					n.right_ = l
+					l.left = n
+					l.right = x
+					n.right = l
 				}
 			}
 		}
 	} else {
 		if p != nil {
-			if t.getBit(n, p.bitpos_) {
-				n.right_ = p.right_
+			if t.getBit(n, p.bitpos) {
+				n.right = p.right
 			} else {
-				n.right_ = p
+				n.right = p
 			}
 		}
 		l = n
 	}
 	if p != nil {
-		if t.getBit(n, p.bitpos_) {
-			p.right_ = l
+		if t.getBit(n, p.bitpos) {
+			p.right = l
 		} else {
-			p.left_ = l
+			p.left = l
 		}
 	} else {
-		t.root_ = l
+		t.root = l
 	}
 	return true
 }
@@ -703,7 +703,7 @@ func (t *treeImpl[K, D]) Insert(key *K, data *D) bool {
 // Logic: Uses getNextNode to traverse the tree in key order, yielding each leaf node's key and data.
 func (t *treeImpl[K, D]) All() func(func(K, D) bool) {
 	return func(yield func(K, D) bool) {
-		if t.root_ == nil {
+		if t.root == nil {
 			// If the tree is empty, nothing to yield.
 			return
 		}
@@ -711,8 +711,8 @@ func (t *treeImpl[K, D]) All() func(func(K, D) bool) {
 		n := t.getNextNode(nil)
 		for n != nil {
 			// Only yield nodes that have both key and data set (i.e., leaf nodes).
-			if n.data_ != nil && n.key_ != nil {
-				if !yield(*n.key_, *n.data_) {
+			if n.data != nil && n.key != nil {
+				if !yield(*n.key, *n.data) {
 					// If yield returns false, stop iteration early.
 					return
 				}

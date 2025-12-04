@@ -58,8 +58,8 @@ func Test_BasicInsertRemoves(t *testing.T) {
 		t.Errorf("it should have failed to insert the entry, Expected false, got true")
 	}
 
-	if tree.nodes_ != 1 {
-		t.Errorf("Node count Expected 1, got %d", tree.nodes_)
+	if tree.nodes != 1 {
+		t.Errorf("Node count Expected 1, got %d", tree.nodes)
 	}
 
 	ret = tree.Remove(&key{val: "abc"})
@@ -73,12 +73,12 @@ func Test_BasicInsertRemoves(t *testing.T) {
 		t.Errorf("Should not remove non-existent entry, Expected false, got true")
 	}
 
-	// Ensure both nodes_ and intNodes_ are zero after removals
-	if tree.nodes_ != 0 {
-		t.Errorf("Node count Expected 0, got %d", tree.nodes_)
+	// Ensure both nodes and intNodes are zero after removals
+	if tree.nodes != 0 {
+		t.Errorf("Node count Expected 0, got %d", tree.nodes)
 	}
-	if tree.intNodes_ != 0 {
-		t.Errorf("Internal node count Expected 0, got %d", tree.intNodes_)
+	if tree.intNodes != 0 {
+		t.Errorf("Internal node count Expected 0, got %d", tree.intNodes)
 	}
 }
 
@@ -99,8 +99,8 @@ func Test_All(t *testing.T) {
 	tree.Insert(&key{val: "aabbccd"}, &data{"aabbccd"})
 	tree.Insert(&key{val: "aabbccdd"}, &data{"aabbccdd"})
 
-	if tree.nodes_ != 6 {
-		t.Errorf("Node count Expected 6, got %d", tree.nodes_)
+	if tree.nodes != 6 {
+		t.Errorf("Node count Expected 6, got %d", tree.nodes)
 	}
 
 	expected := map[string]string{
@@ -126,19 +126,19 @@ func Test_All(t *testing.T) {
 
 	// Remove all keys and check node counts
 	tree.Remove(&key{val: "abc"})
-	if tree.nodes_ != 5 {
-		t.Errorf("Node count Expected 5, got %d", tree.nodes_)
+	if tree.nodes != 5 {
+		t.Errorf("Node count Expected 5, got %d", tree.nodes)
 	}
 	tree.Remove(&key{val: "aabc"})
 	tree.Remove(&key{val: "aabbc"})
 	tree.Remove(&key{val: "aabbcc"})
 	tree.Remove(&key{val: "aabbccd"})
 	tree.Remove(&key{val: "aabbccdd"})
-	if tree.nodes_ != 0 {
-		t.Errorf("Node count Expected 0, got %d", tree.nodes_)
+	if tree.nodes != 0 {
+		t.Errorf("Node count Expected 0, got %d", tree.nodes)
 	}
-	if tree.intNodes_ != 0 {
-		t.Errorf("Internal node count Expected 0, got %d", tree.intNodes_)
+	if tree.intNodes != 0 {
+		t.Errorf("Internal node count Expected 0, got %d", tree.intNodes)
 	}
 }
 
@@ -149,19 +149,19 @@ func Test_EmptyKeyAndValue(t *testing.T) {
 	if !ret {
 		t.Errorf("Failed to insert empty key/value")
 	}
-	if tree.nodes_ != 1 {
-		t.Errorf("Node count Expected 1, got %d", tree.nodes_)
+	if tree.nodes != 1 {
+		t.Errorf("Node count Expected 1, got %d", tree.nodes)
 	}
 	ret = tree.Remove(&key{val: ""})
 	if !ret {
 		t.Errorf("Failed to remove empty key")
 	}
-	// Ensure both nodes_ and intNodes_ are zero after removals
-	if tree.nodes_ != 0 {
-		t.Errorf("Node count Expected 0, got %d", tree.nodes_)
+	// Ensure both nodes and intNodes are zero after removals
+	if tree.nodes != 0 {
+		t.Errorf("Node count Expected 0, got %d", tree.nodes)
 	}
-	if tree.intNodes_ != 0 {
-		t.Errorf("Internal node count Expected 0, got %d", tree.intNodes_)
+	if tree.intNodes != 0 {
+		t.Errorf("Internal node count Expected 0, got %d", tree.intNodes)
 	}
 }
 
@@ -214,11 +214,11 @@ func Test_AllAfterRemovals(t *testing.T) {
 	for _, k := range keys {
 		tree.Remove(&key{val: k})
 	}
-	if tree.nodes_ != 0 {
-		t.Errorf("Node count Expected 0, got %d", tree.nodes_)
+	if tree.nodes != 0 {
+		t.Errorf("Node count Expected 0, got %d", tree.nodes)
 	}
-	if tree.intNodes_ != 0 {
-		t.Errorf("Internal node count Expected 0, got %d", tree.intNodes_)
+	if tree.intNodes != 0 {
+		t.Errorf("Internal node count Expected 0, got %d", tree.intNodes)
 	}
 }
 
@@ -288,8 +288,8 @@ func Test_CompareNodesWithNonByteAligned(t *testing.T) {
 	k1 := testKey{bytes: []byte{0xFF, 0xF8}, bitLength: 13}
 	k2 := testKey{bytes: []byte{0xFF, 0x00}, bitLength: 13}
 
-	n1 := &node[testKey, data]{key_: &k1}
-	n2 := &node[testKey, data]{key_: &k2}
+	n1 := &node[testKey, data]{key: &k1}
+	n2 := &node[testKey, data]{key: &k2}
 
 	// These keys differ only in the remaining 5 bits (bits 8-12)
 	// Without the fix, compareNodes would return true (bug!)
@@ -302,8 +302,8 @@ func Test_CompareNodesWithNonByteAligned(t *testing.T) {
 	k3 := testKey{bytes: []byte{0xFF, 0xF8}, bitLength: 13}
 	k4 := testKey{bytes: []byte{0xFF, 0xF8}, bitLength: 13}
 
-	n3 := &node[testKey, data]{key_: &k3}
-	n4 := &node[testKey, data]{key_: &k4}
+	n3 := &node[testKey, data]{key: &k3}
+	n4 := &node[testKey, data]{key: &k4}
 
 	if !tree.compareNodes(n3, n4) {
 		t.Error("Expected nodes with same keys to be equal")
@@ -315,8 +315,8 @@ func Test_CompareNodesWithNonByteAligned(t *testing.T) {
 	k5 := testKey{bytes: []byte{0xAA, 0xC0}, bitLength: 10}
 	k6 := testKey{bytes: []byte{0xAA, 0x00}, bitLength: 10}
 
-	n5 := &node[testKey, data]{key_: &k5}
-	n6 := &node[testKey, data]{key_: &k6}
+	n5 := &node[testKey, data]{key: &k5}
+	n6 := &node[testKey, data]{key: &k6}
 
 	// Differ in bits 8-9
 	if tree.compareNodes(n5, n6) {
