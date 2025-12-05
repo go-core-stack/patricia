@@ -573,6 +573,11 @@ func (t *treeImpl[K, D]) Remove(key *K) bool {
 			} else {
 				pPrev.left = a
 			}
+			// Clear pointers on the removed node to help GC release key/data and detached children sooner.
+			p.left = nil
+			p.right = nil
+			p.key = nil
+			p.data = nil
 			t.intNodes--
 		} else {
 			if t.getBit(x, p.bitpos) {
@@ -582,6 +587,12 @@ func (t *treeImpl[K, D]) Remove(key *K) bool {
 			}
 		}
 	}
+
+	// Clear pointers on the removed node to help GC release key/data and detached children sooner.
+	x.left = nil
+	x.right = nil
+	x.key = nil
+	x.data = nil
 
 	t.nodes--
 	return true
@@ -649,6 +660,11 @@ func (t *treeImpl[K, D]) Insert(key *K, data *D) bool {
 			n.right = x.right
 			n.left = x.left
 			t.rewireRightMost(n, x.left)
+			// Clear pointers on the removed node to help GC release key/data and detached children sooner.
+			x.left = nil
+			x.right = nil
+			x.key = nil
+			x.data = nil
 			t.intNodes--
 			l = n
 		} else {
